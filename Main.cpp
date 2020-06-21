@@ -40,10 +40,10 @@ void RunTask1(int episodes)
 
 	std::vector<double> actions[4];
 
-	actions[1] = { 1,0,0 };
-	actions[2] = { 0,1,0 };
-	actions[3] = { 0,0,1 };
-	actions[4] = { 0,0,0 };
+	actions[0] = { 1,0,0 };
+	actions[1] = { 0,1,0 };
+	actions[2] = { 0,0,1 };
+	actions[3] = { 0,0,0 };
 
 	cv::Mat clusters;
 		for (auto i = 0; i < episodes; i++)
@@ -72,7 +72,7 @@ cv:threshold(greyscale, greyscale, 175, 255, cv::THRESH_BINARY);
 		for (int y = 0; y < 480; y++)
 		{
 			//if (int(image.at<cv::Vec3b>(y, x)[2]) > 130 && int(image.at<cv::Vec3b>(y, x)[0]) < 50)
-			if ((int)greyscale.at<unsigned char>(x,y)==255)
+			if ((int)greyscale.at<unsigned char>(y,x)==255)
 			{
 				data.push_back(cv::Point2f(x, y));
 			}
@@ -108,25 +108,25 @@ cv:threshold(greyscale, greyscale, 175, 255, cv::THRESH_BINARY);
 	if (y2 < y1) { // тогда y[0] демон 
 
 		if (centers[0].x + 36 < centers[1].x) {
-			game->makeAction(actions[2]); // лево
+			game->makeAction(actions[1]); // лево
 		}
 		else if (centers[0].x - 30 > centers[1].x) {
-			game->makeAction(actions[1]); // право
+			game->makeAction(actions[0]); // право
 		}
 		else {
-			game->makeAction(actions[3]); // shoot
+			game->makeAction(actions[2]); // shoot
 		}
 	}
 	else {
 
 		if (centers[1].x + 35 < centers[0].x) {
-			game->makeAction(actions[2]); //лево
+			game->makeAction(actions[1]); //лево
 		}
 		else if (centers[1].x - 30 > centers[0].x) {
-			game->makeAction(actions[1]); // право
+			game->makeAction(actions[0]); // право
 		}
 		else {
-			game->makeAction(actions[3]); // shoot
+			game->makeAction(actions[2]); // shoot
 		}
 	}
 
@@ -142,10 +142,10 @@ total_reward += game->getTotalReward();
 
 
 int main() {
-	game->setViZDoomPath("../vizdoom/vizdoom");
+	game->setViZDoomPath("../vizdoom/vizdoom.exe");
 	game->setDoomGamePath("../vizdoom/freedoom2.wad");
 
-	cv::namedWindow("Output Window", cv::WINDOW_AUTOSIZE);
+	//cv::namedWindow("Output Window", cv::WINDOW_AUTOSIZE);
 
 	auto episodes = 10;
 
