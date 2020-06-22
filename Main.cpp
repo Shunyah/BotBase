@@ -34,18 +34,18 @@ const std::vector<double> actions2[4] = {
 void game_init() {
 	game->setViZDoomPath("../vizdoom/vizdoom");
 	game->setDoomGamePath("../vizdoom/freedoom2.wad");
-	game->loadConfig("../vizdoom/scenarios/task1.cfg"); // add configurations for game
-	game->setScreenResolution(RES_640X480); // разрешение
-	game->setLabelsBufferEnabled(1); // add this
-	game->setWindowVisible(0); // exception with Linux without X Series
-	game->setRenderWeapon(1); // is the gun will be in the game
+	game->loadConfig("../vizdoom/scenarios/task1.cfg"); 
+	game->setScreenResolution(RES_640X480); 
+	game->setLabelsBufferEnabled(1); 
+	game->setWindowVisible(1);
+	game->setRenderWeapon(1); 
 	game->setRenderHud(1);
 	game->init();
 }
 
 int find(cv::Mat screen) {
 	CvPoint sum = cvPoint(0, 0);
-	for (int x = 200; x < (&screen)->cols; ++x)
+	for (int x = 100; x < (&screen)->cols; ++x)
 		for (int y = 200; y < 250; ++y)
 			if (screen.at<unsigned char>(y, x) == 255) {
 				sum.x += x + 15;
@@ -126,6 +126,7 @@ void RunTask1(int episodes)
 	}
 	std::cout << total_reward / episodes << endl;
 	cvWaitKey(0);
+	cvDestroyAllWindows();
 }
 
 void RunTask2(int episodes)
@@ -136,7 +137,7 @@ void RunTask2(int episodes)
 	auto greyscale = cv::Mat(480, 640, CV_8UC1);
 	
 	cvNamedWindow("Game");
-	cv::moveWindow("Game", 80, 30);
+	cv::moveWindow("Game", 40, 30);
 	cvNamedWindow("Greyscale");
 	cv::moveWindow("Greyscale", 680, 30);
 
@@ -158,8 +159,8 @@ void RunTask2(int episodes)
 
 			CvPoint w = find2(greyscale);
 			kill2(w.x);
-			cv::imshow("Original", image);
-			cv::imshow("Changed", greyscale);
+			cv::imshow("Game", image);
+			cv::imshow("Greyscale", greyscale);
 			
 			cvWaitKey(sleepTime);
 		}
@@ -169,6 +170,7 @@ void RunTask2(int episodes)
 	}
 	std::cout << total_reward / episodes << std::endl;
 	cvWaitKey(0);
+	cvDestroyAllWindows();
 }
 
 
@@ -179,11 +181,11 @@ int main()
 	game->setViZDoomPath(path + "\\vizdoom.exe");
 	game->setDoomGamePath(path + "\\freedoom2.wad");
 
-	cv::namedWindow("Output Window", cv::WINDOW_AUTOSIZE);
+	//cv::namedWindow("Output Window", cv::WINDOW_AUTOSIZE);
 	
 	auto episodes = 10;
 	RunTask1(episodes);
 	
 	game->close();
 
-}
+}									
