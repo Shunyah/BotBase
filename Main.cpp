@@ -17,30 +17,24 @@ auto game = std::make_unique <vizdoom::DoomGame>();
 auto screenBuff = cv::Mat(480, 640, CV_8UC3);
 const unsigned int sleepTime = 1000 / vizdoom::DEFAULT_TICRATE;
 
-const std::vector<double> actions[3] = {
-	{ 1, 0, 0 }, // left
-	{ 0, 1, 0 }, // right
-	{ 0, 0, 1 }, // shoot
-	//{ 0, 0, 0, 1 }, // shoot
+const std::vector<double> actions1[3] = {
+	{ 1, 0, 0}, // left
+	{ 0, 1, 0}, // right
+	{ 0, 0, 1}, // вуд
 };
 
-//void find_demon_and_kill(GameStatePtr state) {
-//	double eps = 10; // monster's width
-//	if (state->labels[0].objectPositionY - eps > state->labels[1].objectPositionY) {
-//		game->makeAction(actions[0]); //left
-//	}
-//	else if (state->labels[0].objectPositionY + eps < state->labels[1].objectPositionY) {
-//		game->makeAction(actions[1]); //right
-//	}
-//	else {
-//		game->makeAction(actions[2]); // shoot
-//	}
-//}
+const std::vector<double> actions2[4] = {
+	{ 1, 0, 0, 0 }, // left
+	{ 0, 1, 0, 0 }, // right
+	{ 0, 0, 1, 0 }, // вуд 
+	{ 0, 0, 0, 1 }, // shoot
+};
+
 
 void game_init() {
 	game->setViZDoomPath("../vizdoom/vizdoom");
 	game->setDoomGamePath("../vizdoom/freedoom2.wad");
-	game->loadConfig("../vizdoom/scenarios/task2.cfg"); // add configurations for game
+	game->loadConfig("../vizdoom/scenarios/task1.cfg"); // add configurations for game
 	game->setScreenResolution(RES_640X480); // разрешение
 	game->setLabelsBufferEnabled(1); // add this
 	game->setWindowVisible(0); // exception with Linux without X Series
@@ -59,13 +53,41 @@ int find(cv::Mat screen) {
 			}
 }
 
-void kill(int x) {
-	if (x > 365)
-		game->makeAction(actions[1]); //right
-	else if (x < 275)
-		game->makeAction(actions[0]); //left
+void kill1(int x) {
+	if (x > 355)
+		game->makeAction(actions1[1]); //right
+	else if (x < 285)
+		game->makeAction(actions1[0]); //left
 	else
-		game->makeAction(actions[2]); //shoot
+		game->makeAction(actions1[2]); //shoot
+}
+
+void kill2(int x) {
+	if (x > 363)
+		game->makeAction(actions2[1]); //right
+	else if (x < 278)
+		game->makeAction(actions2[0]); //left
+	else
+		game->makeAction(actions2[3]); //shoot
+}
+
+void sleep(size_t time) 
+{
+	std::this_thread::sleep_for(std::chrono::milliseconds(time));
+}
+
+CvPoint find2(cv::Mat matrix) {
+	CvPoint sum = cvPoint(0, 0);
+	for (int x = 239; x < (&matrix)->cols; x++) {
+		for (int y = 201; y < 210; y++) {
+			if (matrix.at<unsigned char>(y, x) == 255) {
+				sum.x += x + 15;
+				//sum.y += y;
+				return sum;
+			}
+		}
+	}
+
 }
 
 void RunTask1(int episodes)
@@ -74,6 +96,10 @@ void RunTask1(int episodes)
 
 	auto image = cv::Mat(480, 640, CV_8UC3);
 	auto greyscale = cv::Mat(480, 640, CV_8UC1);
+	cvNamedWindow("Game");
+	cv::moveWindow("Game", 80, 30);
+	cvNamedWindow("Greyscale");
+	cv::moveWindow("Greyscale", 680, 30);
 
 	for (auto i = 0; i < episodes; i++)
 	{
@@ -87,44 +113,10 @@ void RunTask1(int episodes)
 			cv::extractChannel(image, greyscale, 1);
 			cv:threshold(greyscale, greyscale, 130, 255, cv::THRESH_BINARY);
 
-
-			cv::moveWindow("Game", 60, 20);
-			cv::moveWindow("Greyscale", 710, 20);
-			imshow("Game", image);
 			imshow("Greyscale", greyscale);
+			imshow("Game", image);
 			int x = find(greyscale);
-			kill(x);
-			//find_demon_and_kill(gamestate);
-
-
-			/*float y1 = centers[0].y;
-			float y2 = centers[1].y;
-			double eps = 21;
-			if (y2 < y1)
-			{
-
-				if (centers[0].x + 36 < centers[1].x) {
-					game->makeAction(actions[1]);
-				}
-				else if (centers[0].x - 30 > centers[1].x) {
-					game->makeAction(actions[0]);
-				}
-				else {
-					game->makeAction(actions[2]);
-				}
-			}
-			else {
-
-				if (centers[1].x + 35 < centers[0].x) {
-					game->makeAction(actions[1]);
-				}
-				else if (centers[1].x - 30 > centers[0].x) {
-					game->makeAction(actions[0]);
-				}
-				else {
-					game->makeAction(actions[2]);
-				}
-			}*/
+			kill1(x);
 
 			char c = cv::waitKey(sleepTime);
 			if (c == 27) break;
@@ -133,105 +125,54 @@ void RunTask1(int episodes)
 		total_reward += game->getTotalReward();
 	}
 	std::cout << total_reward / episodes << endl;
-	cvWaitKey(45);
+	cvWaitKey(0);
 }
 
-void RunTask2(int episode)
+void RunTask2(int episodes)
 {
-	try
-	{
-		game->loadConfig(path + "\\scenarios\\task2.cfg");
-		game->setWindowVisible(true);
-		game->setRenderWeapon(true);
-		game->init();
-	}
-	catch (std::exception& e)
-	{
-		std::cout << e.what() << std::endl;
-	}
-
-	std::vector<double> actions = { 0,0,0,0 };
-
-	double integral = 0;
+	game_init();
 
 	auto image = cv::Mat(480, 640, CV_8UC3);
 	auto greyscale = cv::Mat(480, 640, CV_8UC1);
+	
+	cvNamedWindow("Game");
+	cv::moveWindow("Game", 80, 30);
+	cvNamedWindow("Greyscale");
+	cv::moveWindow("Greyscale", 680, 30);
 
-	cv::Mat clusters;
+	size_t sleepTime = 1000 / DEFAULT_TICRATE;
 
-	for (auto i = 0; i < episode; i++)
+	for (int i = 0; i < episodes; i++) 
 	{
 		game->newEpisode();
 		std::cout << "Episode #" << i + 1 << std::endl;
-
-		while (!game->isEpisodeFinished())
+		while (!game->isEpisodeFinished()) 
 		{
-			const auto& gameState = game->getState();
-			std::memcpy(image.data, gameState->screenBuffer->data(), gameState->screenBuffer->size());
-
-			std::vector<cv::Point2f> centers;
-			std::vector<cv::Point2f> points(0);
-			for (int x = 0; x < 640; x++)
-			{
-				for (int y = 0; y < 480; y++)
-				{
-					if (int(image.at<cv::Vec3b>(y, x)[2]) > 130 && int(image.at<cv::Vec3b>(y, x)[0]) < 50)
-					{
-						greyscale.at<unsigned char>(y, x) = 255;
-						points.push_back(cv::Point2f(x, y));
-					}
-					else
-					{
-						greyscale.at<unsigned char>(y, x) = 0;
-					}
-				}
-			}
-
-			greyscale.convertTo(greyscale, CV_32F);
-
-			cv::Mat samples = greyscale.reshape(1, greyscale.total());
-
-			cv::kmeans(points, 1, clusters, cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 10, 1.0), 3, cv::KMEANS_RANDOM_CENTERS, centers);
-
-			greyscale.convertTo(greyscale, CV_8UC3);
-
-			for (int i = 0; i < centers.size(); i++)
-			{
-				cv::Point c = centers[i];
-
-				cv::circle(image, c, 5, cv::Scalar(0, 0, 255), -1, 8);
-				cv::rectangle(image, cv::Rect(c.x - 25, c.y - 25, 50, 50), cv::Scalar(0, 0, 255));
-			}
-
-			for (int i = 0; i < points.size(); i++)
-			{
-				cv::circle(image, points[i], 2, cv::Scalar(0, 255, 0));
-			}
+			
+			const auto& gamestate = game->getState();
+			std::memcpy(image.data, gamestate->screenBuffer->data(), gamestate->screenBuffer->size());
+			
+			cv::extractChannel(image, greyscale, 1);
+			cv::threshold(greyscale, greyscale, 130, 255, cv::THRESH_BINARY);
 
 
-			imshow("Game", image);
-			imshow("Greyscale", greyscale);
-			cv::moveWindow("Game", 60, 20);
-			cv::moveWindow("Greyscale", 710, 20);
-
-			double err = centers[0].x - 320;
-			double p = err * 0.2;
-			integral = integral + err * 0.01;
-			double u = p + integral;
-			actions = { 0, 0, u, 0 };
-			if (abs(centers[0].x - 320) < 40)
-			{
-				actions = { 0,0,0,1 };
-			}
-
-			game->makeAction(actions);
-
-			cv::waitKey(sleepTime);
+			CvPoint w = find2(greyscale);
+			kill2(w.x);
+			cv::imshow("Original", image);
+			cv::imshow("Changed", greyscale);
+			
+			cvWaitKey(sleepTime);
 		}
-		std::cout << game->getTotalReward() << std::endl;
+		sleep(sleepTime*10);
+		std::cout << "Total reward is: " << game->getTotalReward() << std::endl;
 		total_reward += game->getTotalReward();
 	}
+	std::cout << total_reward / episodes << std::endl;
+	cvWaitKey(0);
 }
+
+
+	
 
 int main()
 {
@@ -241,7 +182,7 @@ int main()
 	cv::namedWindow("Output Window", cv::WINDOW_AUTOSIZE);
 	
 	auto episodes = 10;
-	RunTask2(episodes);
+	RunTask1(episodes);
 	
 	game->close();
 
