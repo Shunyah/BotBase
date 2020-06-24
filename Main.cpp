@@ -20,13 +20,13 @@ const unsigned int sleepTime = 1000 / vizdoom::DEFAULT_TICRATE;
 const std::vector<double> actions1[3] = {
 	{ 1, 0, 0}, // left
 	{ 0, 1, 0}, // right
-	{ 0, 0, 1}, // ���
+	{ 0, 0, 1}, // âóä
 };
 
 const std::vector<double> actions2[4] = {
 	{ 1, 0, 0, 0 }, // left
 	{ 0, 1, 0, 0 }, // right
-	{ 0, 0, 1, 0 }, // ��� 
+	{ 0, 0, 1, 0 }, // âóä 
 	{ 0, 0, 0, 1 }, // shoot
 };
 
@@ -173,7 +173,140 @@ void RunTask2(int episodes)
 	cvDestroyAllWindows();
 }
 
+void RunTask3(int episodes)
+{
+	try
+	{
+		game->loadConfig(path + "\\scenarios\\task3.cfg");
 
+		game->init();
+
+	}
+	catch (std::exception& e)
+	{
+		std::cout << e.what() << std::endl;
+	}
+	auto greyscale = cv::Mat(480, 640, CV_8UC1);
+	auto image = cv::Mat(480, 640, CV_8UC3);
+	std::vector<double> actions[5];
+
+	actions[0] = { 1,0,0,0 };
+	actions[1] = { 0,1,0,0 };
+	actions[2] = { 0,0,1,0 };
+	actions[3] = { 0,0,0,1 };
+	actions[4] = { 0,0,0,0 };
+
+	cv::Mat clusters;
+	for (auto i = 0; i < episodes; i++)
+	{
+		game->newEpisode();
+		std::cout << "Episode #" << i + 1 << std::endl;
+
+		while (!game->isEpisodeFinished())
+		{
+
+			const auto& gamestate = game->getState();
+
+			std::memcpy(screenBuff.data, gamestate->screenBuffer->data(), gamestate->screenBuffer->size());
+
+			cv::extractChannel(screenBuff, greyscale, 2);
+
+			cv::threshold(greyscale, greyscale, 200, 255, cv::THRESH_BINARY);
+
+			std::vector<cv::Point2f> field(0);
+
+			for (int w = 0; w < 640; w++)
+			{
+				for (int x = 0; x < 410; x++)
+				{
+					if ((int)greyscale.at<unsigned char>(x, w) == 255) {
+						field.push_back(cv::Point2f(w, x));
+
+					}
+				}
+
+			}
+std::vector<cv::Point2f> kit;
+			
+
+			if (field.size() > 1) {
+				// clusters
+				greyscale.convertTo(greyscale, CV_32F);
+				cv::kmeans(field, 2, clusters, cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 10, 1.0), 3, cv::KMEANS_RANDOM_CENTERS, kit);
+				greyscale.convertTo(greyscale, CV_8UC1);
+
+				// closest kit
+				int dest1 = (kit[0].x - 320)* (kit[0].x - 320) + (kit[0].y - 410)* (kit[0].y - 410);
+				int dest2 = (kit[1].x - 320)* (kit[1].x - 320) + (kit[1].y - 410)* (kit[1].y - 410);
+
+				int kit_w = 0;
+				int kit_x = 0;
+
+				if (dest1 < dest2) {
+					kit_w = kit[0].x;
+					kit_x = kit[0].y;
+				}
+				else {
+					kit_w = kit[1].x;
+					kit_x = kit[1].y;
+				}
+				cv::circle(greyscale, cv::Point(kit_w, kit_x),20, cv::Scalar(200, 100, 100), 5);
+				// хотела сделать красиво а получилось как всегда
+				for (int i = 0; i < kit.size(); i++)
+				{
+					cv::Point v = kit[i];
+
+					//cv::circle(greyscale, v, 5, cv::Scalar(0, 0, 255), -1, 8);
+					//cv::rectangle(field, cv::Rect(v.x - 25, v.y - 25, 50, 50), cv::Scalar(0, 0, 255));
+				}
+
+	
+
+
+				//actions
+
+				if (kit_w < 320 - 50) {
+					game->makeAction(actions[0]);
+					game->makeAction(actions[0]);
+
+
+				}
+				else if (kit_w > 320 + 40) {
+					game->makeAction(actions[1]);
+					game->makeAction(actions[1]);
+
+				}
+
+				else {
+					game->makeAction(actions[3]);
+				}
+				game->makeAction(actions[3]);
+
+			}
+
+			else {
+				game->makeAction(actions[2]);
+				game->makeAction(actions[2]);
+
+				game->makeAction(actions[1]);
+			}
+
+
+
+			cv::imshow("Output Window", greyscale);
+			//cv::imshow("Track window", image);
+
+			cv::waitKey(1);
+
+		}
+
+
+		std::cout << std::endl << game->getTotalReward() << std::endl;
+		total_reward += game->getTotalReward();
+	}
+
+	std::cout << std::endl << "Total average" << total_reward / 10 << std::endl;
+}
 	
 
 int main()
